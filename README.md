@@ -1,7 +1,7 @@
 `yamlsplit`
 ---
 
-Splits multi-document YAML files into multiple files.
+A CLI for splitting multidocument yaml files into discrete documents.
 
 ## Usage
 
