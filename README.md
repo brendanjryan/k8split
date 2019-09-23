@@ -7,6 +7,12 @@ A CLI for splitting multidocument yaml files into discrete documents. Useful whe
 
 Documents are named by their "kind" and a numerical postfix. For example, a document with two `Deployment` objects would produce the files `deployment.yaml` and `deployment_1.yaml`.
 
+## Installation
+
+```console
+go get -u github.com/brendanjryan/yamlsplit
+```
+
 ## Usage
 
 Default:
