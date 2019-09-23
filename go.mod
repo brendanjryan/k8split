@@ -1,4 +1,4 @@
-module brendanjryan/yamlsplit
+module github.com/brendanjryan/yamlsplit
 
 go 1.12
 
