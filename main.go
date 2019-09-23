@@ -8,9 +8,10 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -65,15 +66,34 @@ var cmd = &cobra.Command{
 			parts = parts[:len(parts)-1]
 		}
 
+		kinds := map[string]int{}
+
 		log.Printf("split file into %d chunks", len(parts))
 
-		fPrefix := strings.Split(args[0], ".")[0]
 		for i, p := range parts {
-			fName := fmt.Sprintf("%s_%d.yaml", fPrefix, i)
+			data := map[string]interface{}{}
+			err := yaml.Unmarshal(p, &data)
+			if err != nil {
+				log.Fatal("error loading yaml: ", err)
+			}
 
-			log.Println("Writing file: ", fName)
+			// deduce the name of the
+			ks, ok := data["kind"].(string)
+			if !ok {
+				log.Fatalf("no `Kind` field specified for the %d'th document in this file.", i)
+			}
 
-			err := ioutil.WriteFile(fmt.Sprintf("%s/%s", outDir, fName), p, 0644)
+			c, ok := kinds[ks]
+			kinds[ks] = c + 1
+
+			fName := fmt.Sprintf("%s_%d.yaml", strcase.ToSnake(ks), c)
+			if c == 0 {
+				fName = fmt.Sprintf("%s.yaml", strcase.ToSnake(ks))
+			}
+
+			log.Println("Writing file:", fName)
+
+			err = ioutil.WriteFile(fmt.Sprintf("%s/%s", outDir, fName), p, 0644)
 			if err != nil {
 				log.Fatal("error writing file: ", err)
 			}
