@@ -93,7 +93,7 @@ var cmd = &cobra.Command{
 
 			log.Println("Writing file:", fName)
 
-			err = ioutil.WriteFile(fmt.Sprintf("%s/%s", outDir, fName), p, 0644)
+			err = ioutil.WriteFile(fmt.Sprintf("%s/%s", outDir, fName), append(p, []byte("\n")...), 0644)
 			if err != nil {
 				log.Fatal("error writing file: ", err)
 			}
