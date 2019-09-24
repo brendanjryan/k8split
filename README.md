@@ -1,4 +1,4 @@
-`yamlsplit`
+`k8split`
 ---
 
 A CLI for splitting multidocument yaml files into discrete documents. Useful when converting k8s manifests to be fed into `kustomize`.
@@ -10,27 +10,27 @@ Documents are named by their "kind" and a numerical postfix. For example, a docu
 ## Installation
 
 ```console
-go get -u github.com/brendanjryan/yamlsplit
+go get -u github.com/brendanjryan/k8split
 ```
 
 ## Usage
 
 Default:
 ```console
-yamlsplit file.yaml
+k8split file.yaml
 ``` 
 
 To specify an output folder:
 
 ```console
-yamlsplit -o /split file.yaml
+k8split -o /split file.yaml
 ```
 
 
 ## Example 
 
 ```console
-⇒  yamlsplit config.yaml
+⇒  k8split config.yaml
 2019/09/23 15:45:55 splitting config.yaml...
 2019/09/23 15:45:55 split file into 8 chunks
 2019/09/23 15:45:55 Writing file: namespace.yaml

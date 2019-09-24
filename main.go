@@ -23,7 +23,7 @@ func init() {
 }
 
 var cmd = &cobra.Command{
-	Use:   "yamlsplit -o <dir> <file>",
+	Use:   "k8split -o <dir> <file>",
 	Short: "Split a composite yaml file into multiple distinct files",
 	Long:  "Split a composite yaml file into multiple distinct files",
 
@@ -102,7 +102,7 @@ var cmd = &cobra.Command{
 }
 
 // usage:
-// yamlsplit -o <dir <file>
+// k8split -o <dir <file>
 func main() {
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)

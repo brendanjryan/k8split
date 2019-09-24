@@ -1,4 +1,4 @@
-module github.com/brendanjryan/yamlsplit
+module github.com/brendanjryan/k8split
 
 go 1.12
 
