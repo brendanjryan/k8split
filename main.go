@@ -8,8 +8,8 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
@@ -66,7 +66,7 @@ var cmd = &cobra.Command{
 			parts = parts[:len(parts)-1]
 		}
 
-		kinds := map[string]int{}
+		names := map[string]int{}
 
 		log.Printf("split file into %d chunks", len(parts))
 
@@ -78,17 +78,29 @@ var cmd = &cobra.Command{
 			}
 
 			// deduce the name of the
-			ks, ok := data["kind"].(string)
+			kind, ok := data["kind"].(string)
 			if !ok {
 				log.Fatalf("no `Kind` field specified for the %d'th document in this file.", i)
 			}
 
-			c, ok := kinds[ks]
-			kinds[ks] = c + 1
+			metadata, ok := data["metadata"].(map[interface{}]interface{})
+			if !ok {
+				log.Fatalf("no `Metadata` field specified for the %d'th document in this file.", i)
+			}
 
-			fName := fmt.Sprintf("%s_%d.yaml", strcase.ToSnake(ks), c)
+			n, ok := metadata["name"].(string)
+			if !ok {
+				log.Fatalf("no `Metadata.name` field specified for the %d'th document in this file.", i)
+			}
+
+			name := fmt.Sprintf("%s-%s", kind, n)
+
+			c, _ := names[name]
+			names[name] = c + 1
+
+			fName := fmt.Sprintf("%s_%d.yaml", strings.ToLower(name), c)
 			if c == 0 {
-				fName = fmt.Sprintf("%s.yaml", strcase.ToSnake(ks))
+				fName = fmt.Sprintf("%s.yaml", strings.ToLower(name))
 			}
 
 			log.Println("Writing file:", fName)
