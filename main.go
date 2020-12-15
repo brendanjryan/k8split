@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -53,44 +52,39 @@ var cmd = &cobra.Command{
 
 		log.Printf("splitting %s...", args[0])
 
-		// get the line break style for the current OS
-		linebreak := "\n"
-		windowsLineEnding := bytes.Contains(d, []byte("\r\n"))
-		if windowsLineEnding && runtime.GOOS == "windows" {
-			linebreak = "\r\n"
-		}
-
-		parts := bytes.Split(d, []byte(linebreak+"---"+linebreak))
-
-		if bytes.Equal(parts[len(parts)-1], []byte("")) {
-			parts = parts[:len(parts)-1]
-		}
+		dec := yaml.NewDecoder(bytes.NewReader(d))
 
 		names := map[string]int{}
+		i := 0
 
-		log.Printf("split file into %d chunks", len(parts))
-
-		for i, p := range parts {
+		for {
 			data := map[string]interface{}{}
-			err := yaml.Unmarshal(p, &data)
+			if err := dec.Decode(&data); err != nil {
+				if err.Error() == "EOF" {
+					break
+				}
+				log.Fatalf("error reading yaml document %d: %s", i, err)
+			}
+
+			p, err := yaml.Marshal(data)
 			if err != nil {
-				log.Fatal("error loading yaml: ", err)
+				log.Fatalf("error creating yaml for document %d: %s", i, err)
 			}
 
 			// deduce the name of the
 			kind, ok := data["kind"].(string)
 			if !ok {
-				log.Fatalf("no `Kind` field specified for the %d'th document in this file.", i)
+				log.Fatalf("no `Kind` field specified for yaml document %d in this file.", i)
 			}
 
 			metadata, ok := data["metadata"].(map[interface{}]interface{})
 			if !ok {
-				log.Fatalf("no `Metadata` field specified for the %d'th document in this file.", i)
+				log.Fatalf("no `Metadata` field specified for yaml document %d in this file.", i)
 			}
 
 			n, ok := metadata["name"].(string)
 			if !ok {
-				log.Fatalf("no `Metadata.name` field specified for the %d'th document in this file.", i)
+				log.Fatalf("no `Metadata.name` field specified for yaml document %d in this file.", i)
 			}
 
 			name := fmt.Sprintf("%s-%s", kind, n)
@@ -105,10 +99,11 @@ var cmd = &cobra.Command{
 
 			log.Println("Writing file:", fName)
 
-			err = ioutil.WriteFile(fmt.Sprintf("%s/%s", outDir, fName), append(p, []byte("\n")...), 0644)
+			err = ioutil.WriteFile(fmt.Sprintf("%s/%s", outDir, fName), p, 0644)
 			if err != nil {
 				log.Fatal("error writing file: ", err)
 			}
+			i++
 		}
 	},
 }
