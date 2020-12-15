@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -66,6 +66,11 @@ var cmd = &cobra.Command{
 				log.Fatalf("error reading yaml document %d: %s", i, err)
 			}
 
+			// skip empty documents
+			if len(data) < 1 {
+				continue
+			}
+
 			p, err := yaml.Marshal(data)
 			if err != nil {
 				log.Fatalf("error creating yaml for document %d: %s", i, err)
@@ -77,7 +82,7 @@ var cmd = &cobra.Command{
 				log.Fatalf("no `Kind` field specified for yaml document %d in this file.", i)
 			}
 
-			metadata, ok := data["metadata"].(map[interface{}]interface{})
+			metadata, ok := data["metadata"].(map[string]interface{})
 			if !ok {
 				log.Fatalf("no `Metadata` field specified for yaml document %d in this file.", i)
 			}
