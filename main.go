@@ -7,11 +7,10 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"runtime"
+	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -53,50 +52,63 @@ var cmd = &cobra.Command{
 
 		log.Printf("splitting %s...", args[0])
 
-		// get the line break style for the current OS
-		linebreak := "\n"
-		windowsLineEnding := bytes.Contains(d, []byte("\r\n"))
-		if windowsLineEnding && runtime.GOOS == "windows" {
-			linebreak = "\r\n"
-		}
+		dec := yaml.NewDecoder(bytes.NewReader(d))
 
-		parts := bytes.Split(d, []byte(linebreak+"---"+linebreak))
+		names := map[string]int{}
+		i := 0
 
-		if bytes.Equal(parts[len(parts)-1], []byte("")) {
-			parts = parts[:len(parts)-1]
-		}
-
-		kinds := map[string]int{}
-
-		log.Printf("split file into %d chunks", len(parts))
-
-		for i, p := range parts {
+		for {
 			data := map[string]interface{}{}
-			err := yaml.Unmarshal(p, &data)
+			if err := dec.Decode(&data); err != nil {
+				if err.Error() == "EOF" {
+					break
+				}
+				log.Fatalf("error reading yaml document %d: %s", i, err)
+			}
+
+			// skip empty documents
+			if len(data) < 1 {
+				continue
+			}
+
+			p, err := yaml.Marshal(data)
 			if err != nil {
-				log.Fatal("error loading yaml: ", err)
+				log.Fatalf("error creating yaml for document %d: %s", i, err)
 			}
 
 			// deduce the name of the
-			ks, ok := data["kind"].(string)
+			kind, ok := data["kind"].(string)
 			if !ok {
-				log.Fatalf("no `Kind` field specified for the %d'th document in this file.", i)
+				log.Fatalf("no `Kind` field specified for yaml document %d in this file.", i)
 			}
 
-			c, ok := kinds[ks]
-			kinds[ks] = c + 1
+			metadata, ok := data["metadata"].(map[string]interface{})
+			if !ok {
+				log.Fatalf("no `Metadata` field specified for yaml document %d in this file.", i)
+			}
 
-			fName := fmt.Sprintf("%s_%d.yaml", strcase.ToSnake(ks), c)
+			n, ok := metadata["name"].(string)
+			if !ok {
+				log.Fatalf("no `Metadata.name` field specified for yaml document %d in this file.", i)
+			}
+
+			name := fmt.Sprintf("%s-%s", kind, n)
+
+			c, _ := names[name]
+			names[name] = c + 1
+
+			fName := fmt.Sprintf("%s_%d.yaml", strings.ToLower(name), c)
 			if c == 0 {
-				fName = fmt.Sprintf("%s.yaml", strcase.ToSnake(ks))
+				fName = fmt.Sprintf("%s.yaml", strings.ToLower(name))
 			}
 
 			log.Println("Writing file:", fName)
 
-			err = ioutil.WriteFile(fmt.Sprintf("%s/%s", outDir, fName), append(p, []byte("\n")...), 0644)
+			err = ioutil.WriteFile(fmt.Sprintf("%s/%s", outDir, fName), p, 0644)
 			if err != nil {
 				log.Fatal("error writing file: ", err)
 			}
+			i++
 		}
 	},
 }
